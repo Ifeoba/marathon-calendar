@@ -207,6 +207,8 @@ function App() {
         onClose={closeSettings}
         startDate={t.startDate || "2026-05-12"}
         onSetStartDate={setStartDate}
+        theme={t.theme || "light"}
+        onSetTheme={(v) => setTweak("theme", v)}
       />
 
       <TweaksPanel title="Tweaks">

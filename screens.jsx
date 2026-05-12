@@ -454,7 +454,7 @@ function DetailSheet({ id, open, onClose, state, actions }) {
 Object.assign(window, { TodayScreen, PlanScreen, GuideScreen, DetailSheet, SettingsSheet });
 
 // ───────── SETTINGS SHEET ─────────
-function SettingsSheet({ open, onClose, startDate, onSetStartDate }) {
+function SettingsSheet({ open, onClose, startDate, onSetStartDate, theme, onSetTheme }) {
   const parsed = startDate ? new Date(
     +startDate.slice(0,4), +startDate.slice(5,7)-1, +startDate.slice(8,10)
   ) : new Date(2026, 4, 12);
@@ -534,6 +534,21 @@ function SettingsSheet({ open, onClose, startDate, onSetStartDate }) {
                 the end of foundation training and race day —
                 plenty of room to ramp through 5K, 10K and half-marathon plans.
               </div>
+            </div>
+
+            <div className="label">Appearance</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[{ value: "light", label: "Light", icon: "☀" }, { value: "dark", label: "Dark", icon: "☽" }].map(opt => (
+                <button
+                  key={opt.value}
+                  className={"cta " + (theme === opt.value ? "primary" : "ghost")}
+                  style={{ height: 52, padding: 0, fontSize: 14, fontFamily: "var(--display)", fontWeight: 600, gap: 8 }}
+                  onClick={() => onSetTheme(opt.value)}
+                >
+                  <span style={{ fontSize: 18, lineHeight: 1 }}>{opt.icon}</span>
+                  {opt.label}
+                </button>
+              ))}
             </div>
 
             <div className="label">Quick presets</div>
