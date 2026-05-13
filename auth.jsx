@@ -112,7 +112,7 @@ function AuthScreen({ onAuth }) {
         <div className="auth-brand">
           <div className="auth-glyph" />
           <div>
-            <div className="auth-brand-name">FOUNDATION</div>
+            <div className="auth-brand-name">MARATHON</div>
             <div className="auth-brand-sub">Lagos · 2027</div>
           </div>
         </div>
