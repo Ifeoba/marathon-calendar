@@ -93,7 +93,7 @@ function Masthead({ todayDate, onOpenSettings }) {
       <div className="brand-mark">
         <div className="glyph" aria-hidden />
         <div className="name">
-          FOUNDATION
+          MARATHON
           <small>Lagos · 2027</small>
         </div>
       </div>
