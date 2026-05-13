@@ -454,7 +454,7 @@ function DetailSheet({ id, open, onClose, state, actions }) {
 Object.assign(window, { TodayScreen, PlanScreen, GuideScreen, DetailSheet, SettingsSheet });
 
 // ───────── SETTINGS SHEET ─────────
-function SettingsSheet({ open, onClose, startDate, onSetStartDate, theme, onSetTheme }) {
+function SettingsSheet({ open, onClose, startDate, onSetStartDate, theme, onSetTheme, user, onLogout }) {
   const parsed = startDate ? new Date(
     +startDate.slice(0,4), +startDate.slice(5,7)-1, +startDate.slice(8,10)
   ) : new Date(2026, 4, 12);
@@ -479,9 +479,31 @@ function SettingsSheet({ open, onClose, startDate, onSetStartDate, theme, onSetT
         <div className="sheet-scroll">
           <div className="sheet-head">
             <div className="crumb">
-              <span>Plan Settings</span>
+              <span>Settings</span>
               <button className="close" onClick={onClose} aria-label="Close">×</button>
             </div>
+            {user && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 0 14px",
+                borderBottom: "1px solid var(--rule)",
+                marginBottom: 4,
+              }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  background: "var(--ink)", flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "var(--display)", fontWeight: 700, fontSize: 14,
+                  color: "var(--bg)",
+                }}>
+                  {user.email[0].toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Signed in as</div>
+                  <div style={{ fontFamily: "var(--display)", fontWeight: 600, fontSize: 14, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+                </div>
+              </div>
+            )}
             <div className="focus-tag">Personalize the 12-week window</div>
             <h2 className="stitle">When do you start?</h2>
             <div className="ssub">
@@ -585,9 +607,21 @@ function SettingsSheet({ open, onClose, startDate, onSetStartDate, theme, onSetT
         </div>
 
         <div className="sheet-foot">
+          {onLogout && (
+            <button
+              className="cta ghost"
+              style={{ flex: 1, color: "var(--danger)", borderColor: "var(--danger)" }}
+              onClick={async () => {
+                onClose();
+                await onLogout();
+              }}
+            >
+              Log out
+            </button>
+          )}
           <button
             className="cta primary"
-            style={{ flex: 1 }}
+            style={{ flex: 2 }}
             onClick={onClose}
           >
             Done

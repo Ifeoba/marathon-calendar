@@ -2,7 +2,7 @@
 // Marathon Foundation Calendar — root app (Performance theme)
 // ============================================================
 
-const STORAGE_KEY = "marathon-foundation-v2";
+const STORAGE_KEY_PREFIX = "marathon-foundation-v2";
 
 const DEFAULT_STATE = {
   completed: {},
@@ -10,18 +10,18 @@ const DEFAULT_STATE = {
   notes: {},
 };
 
-function loadState() {
+function getStorageKey(userId) {
+  return `${STORAGE_KEY_PREFIX}-${userId}`;
+}
+
+function loadUserState(userId) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKey(userId));
     if (!raw) return DEFAULT_STATE;
-    const parsed = JSON.parse(raw);
-    return { ...DEFAULT_STATE, ...parsed };
+    return { ...DEFAULT_STATE, ...JSON.parse(raw) };
   } catch (_) {
     return DEFAULT_STATE;
   }
-}
-function saveState(s) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (_) {}
 }
 
 // ─────── Tweaks ───────
@@ -48,7 +48,6 @@ const ACCENT_PALETTES = {
 };
 
 function parseISO(iso) {
-  // "YYYY-MM-DD" → local midnight Date (no timezone surprises)
   if (!iso || typeof iso !== "string") return null;
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return null;
@@ -61,32 +60,65 @@ function toISO(d) {
 }
 
 function App() {
-  // Real today, normalized to midnight
   const today = useMemo(() => {
     const n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), n.getDate());
   }, []);
 
+  // ── Auth ─────────────────────────────────────────
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    window._supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = window._supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // ── Per-user workout state ─────────────────────────
+  const [state, setState] = useState(DEFAULT_STATE);
+  // Ref guard: prevents saving DEFAULT_STATE while we're loading from storage.
+  const loadedForUserRef = useRef(null);
+
+  useEffect(() => {
+    if (!user) {
+      loadedForUserRef.current = null;
+      setState(DEFAULT_STATE);
+      return;
+    }
+    loadedForUserRef.current = user.id;
+    setState(loadUserState(user.id));
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || loadedForUserRef.current !== user.id) return;
+    try {
+      localStorage.setItem(getStorageKey(user.id), JSON.stringify(state));
+    } catch (_) {}
+  }, [state]);
+
+  // ── Tweaks ────────────────────────────────────────
   const [tab, setTab] = useState("today");
-  const [state, setState] = useState(loadState);
   const [detailId, setDetailId] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
 
-  // Sync PLAN_START with the tweak (snapped to a Tuesday)
   useEffect(() => {
     const parsed = parseISO(t.startDate) || new Date(2026, 4, 12);
     setPlanStart(parsed);
   }, [t.startDate]);
 
-  // Default openWeek follows the start date / today
   const [openWeek, setOpenWeek] = useState(0);
   useEffect(() => {
     setOpenWeek(currentWeekIndex(today));
   }, [today, t.startDate]);
 
-  // Apply tweaks
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute("data-theme", t.theme || "light");
@@ -96,13 +128,11 @@ function App() {
     const palette = ACCENT_PALETTES[t.accent] || ACCENT_PALETTES.volt;
     root.style.setProperty("--accent", palette.accent);
     root.style.setProperty("--accent-ink", palette.ink);
-    // theme-color meta
     const themeCol = t.theme === "dark" ? "#060606" : "#F2F2EF";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeCol);
   }, [t]);
 
-  useEffect(() => { saveState(state); }, [state]);
-
+  // ── Actions ───────────────────────────────────────
   const actions = useMemo(() => ({
     toggleComplete(id) {
       setState(s => ({
@@ -147,6 +177,10 @@ function App() {
     }
   }, [setTweak]);
 
+  const logout = useCallback(async () => {
+    await window._supabase.auth.signOut();
+  }, []);
+
   useEffect(() => {
     const h = (e) => {
       if (e.key !== "Escape") return;
@@ -164,6 +198,19 @@ function App() {
       window.scrollTo?.({ top: 0, behavior: "smooth" });
     });
   }, []);
+
+  // ── Render gates ─────────────────────────────────
+  if (authLoading) {
+    return (
+      <div className="auth-wrap">
+        <div className="auth-spinner" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen onAuth={setUser} />;
+  }
 
   return (
     <div className="app">
@@ -209,6 +256,8 @@ function App() {
         onSetStartDate={setStartDate}
         theme={t.theme || "light"}
         onSetTheme={(v) => setTweak("theme", v)}
+        user={user}
+        onLogout={logout}
       />
 
       <TweaksPanel title="Tweaks">
@@ -244,8 +293,6 @@ function App() {
               const n = new Date();
               const t0 = new Date(n.getFullYear(), n.getMonth(), n.getDate());
               const snapped = snapToTuesday(t0);
-              // If today is already past this week's Tuesday, snapToTuesday picks
-              // last Tue; nudge forward a week so "start today" never means "last week".
               if (snapped < t0) snapped.setDate(snapped.getDate() + 7);
               setTweak("startDate", toISO(snapped));
             }}
