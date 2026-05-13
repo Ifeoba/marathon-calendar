@@ -490,17 +490,21 @@ function SettingsSheet({ open, onClose, startDate, onSetStartDate, theme, onSetT
                 marginBottom: 4,
               }}>
                 <div style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: "var(--ink)", flexShrink: 0,
+                  width: 40, height: 40, borderRadius: "50%",
+                  background: "var(--accent)", flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "var(--display)", fontWeight: 700, fontSize: 14,
-                  color: "var(--bg)",
+                  fontFamily: "var(--display)", fontWeight: 700, fontSize: 15,
+                  color: "var(--accent-ink)",
                 }}>
-                  {user.email[0].toUpperCase()}
+                  {(user.user_metadata?.username || user.email)[0].toUpperCase()}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Signed in as</div>
-                  <div style={{ fontFamily: "var(--display)", fontWeight: 600, fontSize: 14, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+                  {user.user_metadata?.username && (
+                    <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 16, color: "var(--ink)", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+                      {user.user_metadata.username}
+                    </div>
+                  )}
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.08em", color: "var(--muted)", marginTop: user.user_metadata?.username ? 2 : 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
                 </div>
               </div>
             )}

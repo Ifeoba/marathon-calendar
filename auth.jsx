@@ -4,6 +4,7 @@
 
 function AuthScreen({ onAuth }) {
   const [mode, setMode] = useState("login"); // "login" | "signup" | "verify"
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -13,13 +14,17 @@ function AuthScreen({ onAuth }) {
 
   async function handleSignUp(e) {
     e.preventDefault();
-    if (!email || !password) { setError("Please fill in all fields."); return; }
+    if (!username || !email || !password) { setError("Please fill in all fields."); return; }
+    if (username.trim().length < 2) { setError("Username must be at least 2 characters."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setError(""); setLoading(true);
     const { error: err } = await window._supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { username: username.trim() },
+      },
     });
     setLoading(false);
     if (err) { setError(err.message); return; }
@@ -111,6 +116,17 @@ function AuthScreen({ onAuth }) {
 
         <form onSubmit={isSignup ? handleSignUp : handleLogin}>
           <div className="auth-fields">
+            {isSignup && (
+              <input
+                className="auth-input"
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            )}
             <input
               className="auth-input"
               type="email"
