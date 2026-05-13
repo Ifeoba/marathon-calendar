@@ -13,8 +13,21 @@ function AuthScreen({ onAuth }) {
 
   const switchMode = (m) => { setMode(m); setError(""); };
 
+  function supabaseReady() {
+    if (window._supabaseError) {
+      setError("Auth not available: " + window._supabaseError);
+      return false;
+    }
+    if (!window._supabase) {
+      setError("Auth client failed to load. Please refresh the page.");
+      return false;
+    }
+    return true;
+  }
+
   async function handleSignUp(e) {
     e.preventDefault();
+    if (!supabaseReady()) return;
     if (!username || !email || !password) { setError("Please fill in all fields."); return; }
     if (username.trim().length < 2) { setError("Username must be at least 2 characters."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
@@ -28,10 +41,11 @@ function AuthScreen({ onAuth }) {
           data: { username: username.trim() },
         },
       });
-      if (err) { setError(err.message); return; }
+      if (err) { console.error("[Supabase] signUp error:", err); setError(err.message); return; }
       setMode("verify");
     } catch (ex) {
-      setError("Network error — check your connection and try again.");
+      console.error("[Supabase] signUp exception:", ex);
+      setError(ex.message || "Unexpected error — check the browser console.");
     } finally {
       setLoading(false);
     }
@@ -39,14 +53,16 @@ function AuthScreen({ onAuth }) {
 
   async function handleLogin(e) {
     e.preventDefault();
+    if (!supabaseReady()) return;
     if (!email || !password) { setError("Please fill in all fields."); return; }
     setError(""); setLoading(true);
     try {
       const { data, error: err } = await window._supabase.auth.signInWithPassword({ email, password });
-      if (err) { setError(err.message); return; }
+      if (err) { console.error("[Supabase] signIn error:", err); setError(err.message); return; }
       onAuth(data.user);
     } catch (ex) {
-      setError("Network error — check your connection and try again.");
+      console.error("[Supabase] signIn exception:", ex);
+      setError(ex.message || "Unexpected error — check the browser console.");
     } finally {
       setLoading(false);
     }
