@@ -1296,3 +1296,24 @@ input, textarea { font: inherit; color: inherit; }
   color: var(--ink);
   margin-bottom: 16px;
 }
+.auth-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.auth-input-pw {
+  width: 100%;
+  padding-right: 48px;
+}
+.auth-pw-toggle {
+  position: absolute;
+  right: 14px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+.auth-pw-toggle:hover { color: var(--ink); }
