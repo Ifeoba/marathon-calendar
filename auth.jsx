@@ -19,27 +19,37 @@ function AuthScreen({ onAuth }) {
     if (username.trim().length < 2) { setError("Username must be at least 2 characters."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setError(""); setLoading(true);
-    const { error: err } = await window._supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { username: username.trim() },
-      },
-    });
-    setLoading(false);
-    if (err) { setError(err.message); return; }
-    setMode("verify");
+    try {
+      const { error: err } = await window._supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { username: username.trim() },
+        },
+      });
+      if (err) { setError(err.message); return; }
+      setMode("verify");
+    } catch (ex) {
+      setError("Network error — check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleLogin(e) {
     e.preventDefault();
     if (!email || !password) { setError("Please fill in all fields."); return; }
     setError(""); setLoading(true);
-    const { data, error: err } = await window._supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (err) { setError(err.message); return; }
-    onAuth(data.user);
+    try {
+      const { data, error: err } = await window._supabase.auth.signInWithPassword({ email, password });
+      if (err) { setError(err.message); return; }
+      onAuth(data.user);
+    } catch (ex) {
+      setError("Network error — check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (mode === "verify") {
