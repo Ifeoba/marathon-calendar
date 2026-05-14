@@ -454,7 +454,7 @@ function DetailSheet({ id, open, onClose, state, actions }) {
 Object.assign(window, { TodayScreen, PlanScreen, GuideScreen, DetailSheet, SettingsSheet });
 
 // ───────── SETTINGS SHEET ─────────
-function SettingsSheet({ open, onClose, startDate, onSetStartDate, theme, onSetTheme, user, onLogout }) {
+function SettingsSheet({ open, onClose, startDate, onSetStartDate, theme, onSetTheme, user, onLogout, stravaConn, onStravaDisconnect, stravaClientId, stravaRedirectUri }) {
   const parsed = startDate ? new Date(
     +startDate.slice(0,4), +startDate.slice(5,7)-1, +startDate.slice(8,10)
   ) : new Date(2026, 4, 12);
@@ -575,6 +575,50 @@ function SettingsSheet({ open, onClose, startDate, onSetStartDate, theme, onSetT
                   {opt.label}
                 </button>
               ))}
+            </div>
+
+            <div className="label">Connected apps</div>
+            <div style={{ border: "1px solid var(--rule)", borderRadius: 12, overflow: "hidden" }}>
+              <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 9, background: "#FC4C02",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 4l4 8h-3l4 8" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>Strava</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 1 }}>
+                    {stravaConn
+                      ? `${stravaConn.athlete.firstname} ${stravaConn.athlete.lastname}`
+                      : "Not connected"}
+                  </div>
+                </div>
+                {stravaConn ? (
+                  <button
+                    className="cta ghost"
+                    style={{ fontSize: 12, height: 32, padding: "0 12px", flexShrink: 0 }}
+                    onClick={onStravaDisconnect}
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  <a
+                    href={`https://www.strava.com/oauth/authorize?client_id=${stravaClientId}&response_type=code&redirect_uri=${encodeURIComponent(stravaRedirectUri)}&approval_prompt=force&scope=activity:read_all`}
+                    style={{
+                      display: "inline-flex", alignItems: "center",
+                      background: "#FC4C02", color: "#fff",
+                      fontSize: 12, fontFamily: "var(--display)", fontWeight: 700,
+                      height: 32, padding: "0 14px", borderRadius: 8,
+                      textDecoration: "none", flexShrink: 0,
+                    }}
+                  >
+                    Connect
+                  </a>
+                )}
+              </div>
             </div>
 
             <div className="label">Quick presets</div>

@@ -3,6 +3,12 @@
 // ============================================================
 
 const STORAGE_KEY_PREFIX = "marathon-foundation-v2";
+const STRAVA_CLIENT_ID = "245097";
+const STRAVA_REDIRECT_URI = "https://marathon-calendar-mauve.vercel.app";
+
+function getStravaKey(userId) {
+  return `marathon-strava-${userId}`;
+}
 
 const DEFAULT_STATE = {
   completed: {},
@@ -101,6 +107,48 @@ function App() {
       localStorage.setItem(getStorageKey(user.id), JSON.stringify(state));
     } catch (_) {}
   }, [state]);
+
+  // ── Strava ────────────────────────────────────────
+  const [stravaConn, setStravaConn] = useState(null);
+  const stravaCodeProcessed = useRef(false);
+
+  useEffect(() => {
+    if (!user) { setStravaConn(null); return; }
+    try {
+      const raw = localStorage.getItem(getStravaKey(user.id));
+      if (raw) setStravaConn(JSON.parse(raw));
+    } catch (_) {}
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || stravaCodeProcessed.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const scope = params.get("scope");
+    if (!code) return;
+    stravaCodeProcessed.current = true;
+    window.history.replaceState({}, "", window.location.pathname);
+    if (!scope?.includes("activity:read_all")) return;
+    fetch("/api/strava/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "exchange", code }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { console.error("[Strava] exchange error:", data.error); return; }
+        const conn = { access_token: data.access_token, refresh_token: data.refresh_token, expires_at: data.expires_at, athlete: data.athlete };
+        setStravaConn(conn);
+        localStorage.setItem(getStravaKey(user.id), JSON.stringify(conn));
+      })
+      .catch(e => console.error("[Strava] exchange failed:", e));
+  }, [user?.id]);
+
+  const disconnectStrava = useCallback(() => {
+    if (!user) return;
+    setStravaConn(null);
+    localStorage.removeItem(getStravaKey(user.id));
+  }, [user?.id]);
 
   // ── Tweaks ────────────────────────────────────────
   const [tab, setTab] = useState("today");
@@ -258,6 +306,10 @@ function App() {
         onSetTheme={(v) => setTweak("theme", v)}
         user={user}
         onLogout={logout}
+        stravaConn={stravaConn}
+        onStravaDisconnect={disconnectStrava}
+        stravaClientId={STRAVA_CLIENT_ID}
+        stravaRedirectUri={STRAVA_REDIRECT_URI}
       />
 
       <TweaksPanel title="Tweaks">
